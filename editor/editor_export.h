@@ -69,6 +69,7 @@ private:
 	String exporter;
 	Set<String> selected_files;
 	bool runnable;
+	bool open_export_directory;
 
 	friend class EditorExport;
 	friend class EditorExportPlatform;
@@ -106,6 +107,9 @@ public:
 
 	void set_runnable(bool p_enable);
 	bool is_runnable() const;
+
+	void set_open_export_dir(bool p_enable);
+	bool is_open_export_dir() const;
 
 	void set_export_filter(ExportFilter p_filter);
 	ExportFilter get_export_filter() const;
