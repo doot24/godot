@@ -70,6 +70,7 @@ private:
 	EditorPropertyPath *export_path;
 	EditorInspector *parameters;
 	CheckButton *runnable;
+	CheckButton *open_dir;
 
 	Button *button_export;
 	bool updating;
@@ -104,6 +105,7 @@ private:
 	String default_filename;
 
 	void _runnable_pressed();
+	void _open_dir_pressed();
 	void _update_parameters(const String &p_edited_property);
 	void _name_changed(const String &p_string);
 	void _export_path_changed(const StringName &p_property, const Variant &p_value, const String &p_field, bool p_changing);

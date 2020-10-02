@@ -197,6 +197,7 @@ void ProjectExportDialog::_edit_preset(int p_index) {
 		name->set_editable(false);
 		export_path->hide();
 		runnable->set_disabled(true);
+		open_dir->set_disabled(true);
 		parameters->edit(NULL);
 		presets->unselect_all();
 		duplicate_preset->set_disabled(true);
@@ -231,6 +232,8 @@ void ProjectExportDialog::_edit_preset(int p_index) {
 	export_path->update_property();
 	runnable->set_disabled(false);
 	runnable->set_pressed(current->is_runnable());
+	open_dir->set_disabled(false);
+	open_dir->set_pressed(current->is_open_export_dir());
 	parameters->edit(current.ptr());
 
 	export_filter->select(current->get_export_filter());
@@ -381,6 +384,29 @@ void ProjectExportDialog::_runnable_pressed() {
 	_update_presets();
 }
 
+void ProjectExportDialog::_open_dir_pressed() {
+	if (updating)
+		return;
+
+	Ref<EditorExportPreset> current = get_current_preset();
+	ERR_FAIL_COND(current.is_null());
+
+	if (open_dir->is_pressed()) {
+
+		for (int i = 0; i < EditorExport::get_singleton()->get_export_preset_count(); i++) {
+			Ref<EditorExportPreset> p = EditorExport::get_singleton()->get_export_preset(i);
+			if (p->get_platform() == current->get_platform()) {
+				p->set_open_export_dir(current == p);
+			}
+		}
+	} else {
+
+		current->set_open_export_dir(false);
+	}
+
+	_update_presets();
+}
+
 void ProjectExportDialog::_name_changed(const String &p_string) {
 
 	if (updating)
@@ -473,6 +499,7 @@ void ProjectExportDialog::_duplicate_preset() {
 
 	String name = current->get_name() + " (copy)";
 	bool make_runnable = true;
+	bool open_export_dir = true;
 	while (true) {
 
 		bool valid = true;
@@ -481,6 +508,9 @@ void ProjectExportDialog::_duplicate_preset() {
 			Ref<EditorExportPreset> p = EditorExport::get_singleton()->get_export_preset(i);
 			if (p->get_platform() == preset->get_platform() && p->is_runnable()) {
 				make_runnable = false;
+			}
+			if (p->get_platform() == preset->get_platform() && p->is_open_export_dir()) {
+				open_export_dir = false;
 			}
 			if (p->get_name() == name) {
 				valid = false;
@@ -497,6 +527,11 @@ void ProjectExportDialog::_duplicate_preset() {
 	preset->set_name(name);
 	if (make_runnable)
 		preset->set_runnable(make_runnable);
+
+	if (open_export_dir) {
+		preset->set_open_export_dir(open_export_dir);
+	}
+
 	preset->set_export_filter(current->get_export_filter());
 	preset->set_include_filter(current->get_include_filter());
 	preset->set_exclude_filter(current->get_exclude_filter());
@@ -778,10 +813,15 @@ void ProjectExportDialog::_export_pck_zip_selected(const String &p_path) {
 	Ref<EditorExportPlatform> platform = current->get_platform();
 	ERR_FAIL_COND(platform.is_null());
 
+	Error err;
 	if (p_path.ends_with(".zip")) {
-		platform->export_zip(current, export_pck_zip_debug->is_pressed(), p_path);
+		err = platform->export_zip(current, export_pck_zip_debug->is_pressed(), p_path);
 	} else if (p_path.ends_with(".pck")) {
-		platform->export_pack(current, export_pck_zip_debug->is_pressed(), p_path);
+		err = platform->export_pack(current, export_pck_zip_debug->is_pressed(), p_path);
+	}
+
+	if (current->is_open_export_dir() && err == OK) {
+		OS::get_singleton()->shell_open(p_path.get_base_dir());
 	}
 }
 
@@ -868,6 +908,10 @@ void ProjectExportDialog::_export_project_to_path(const String &p_path) {
 		error_dialog->show();
 		error_dialog->popup_centered_minsize(Size2(300, 80));
 	}
+
+	if (current->is_open_export_dir() && err == OK) {
+		OS::get_singleton()->shell_open(current->get_export_path().get_base_dir());
+	}
 }
 
 void ProjectExportDialog::_export_all_dialog() {
@@ -907,6 +951,10 @@ void ProjectExportDialog::_export_all(bool p_debug) {
 			error_dialog->popup_centered_minsize(Size2(300, 80));
 			ERR_PRINT("Failed to export project");
 		}
+
+		if (preset->is_open_export_dir() && err == OK) {
+			OS::get_singleton()->shell_open(preset->get_export_path().get_base_dir());
+		}
 	}
 }
 
@@ -916,6 +964,7 @@ void ProjectExportDialog::_bind_methods() {
 	ClassDB::bind_method("_edit_preset", &ProjectExportDialog::_edit_preset);
 	ClassDB::bind_method("_update_parameters", &ProjectExportDialog::_update_parameters);
 	ClassDB::bind_method("_runnable_pressed", &ProjectExportDialog::_runnable_pressed);
+	ClassDB::bind_method("_open_dir_pressed", &ProjectExportDialog::_open_dir_pressed);
 	ClassDB::bind_method("_name_changed", &ProjectExportDialog::_name_changed);
 	ClassDB::bind_method("_duplicate_preset", &ProjectExportDialog::_duplicate_preset);
 	ClassDB::bind_method("_delete_preset", &ProjectExportDialog::_delete_preset);
@@ -1002,6 +1051,12 @@ ProjectExportDialog::ProjectExportDialog() {
 	runnable->set_tooltip(TTR("If checked, the preset will be available for use in one-click deploy.\nOnly one preset per platform may be marked as runnable."));
 	runnable->connect("pressed", this, "_runnable_pressed");
 	settings_vb->add_child(runnable);
+
+	open_dir = memnew(CheckButton);
+	open_dir->set_text(TTR("Open Export Directory"));
+	open_dir->set_tooltip(TTR("If checked, once the export process is done the directory where the game was exported to will be opened in your default file manager"));
+	open_dir->connect("pressed", this, "_open_dir_pressed");
+	settings_vb->add_child(open_dir);
 
 	export_path = memnew(EditorPropertyPath);
 	settings_vb->add_child(export_path);
@@ -1102,6 +1157,7 @@ ProjectExportDialog::ProjectExportDialog() {
 	name->set_editable(false);
 	export_path->hide();
 	runnable->set_disabled(true);
+	open_dir->set_disabled(true);
 	duplicate_preset->set_disabled(true);
 	delete_preset->set_disabled(true);
 	script_key_error->hide();
