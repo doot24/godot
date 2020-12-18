@@ -31,6 +31,8 @@
 #ifndef LINKBUTTON_H
 #define LINKBUTTON_H
 
+#include "core/os/os.h"
+
 #include "scene/gui/base_button.h"
 #include "scene/resources/bit_map.h"
 
@@ -47,6 +49,7 @@ public:
 
 private:
 	String text;
+    String url;
 	UnderlineMode underline_mode;
 
 protected:
@@ -57,6 +60,11 @@ protected:
 public:
 	void set_text(const String &p_text);
 	String get_text() const;
+
+    void set_url(const String &p_text);
+    String get_url() const;
+
+    void open_url();
 
 	void set_underline_mode(UnderlineMode p_underline_mode);
 	UnderlineMode get_underline_mode() const;
