@@ -1823,7 +1823,8 @@ public:
 	}
 
 		// Export to temporary APK before sending to device.
-		Error err = export_project(p_preset, true, tmp_export_path, p_debug_flags);
+
+        Error err = export_project(p_preset, p_preset->deploy_native_debug, tmp_export_path, p_debug_flags);
 
 		if (err != OK) {
 			CLEANUP_AND_RETURN(err);

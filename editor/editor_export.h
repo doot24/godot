@@ -71,6 +71,7 @@ private:
 	bool runnable;
 	bool open_export_directory;
 
+
 	friend class EditorExport;
 	friend class EditorExportPlatform;
 
@@ -92,6 +93,7 @@ protected:
 public:
 	Ref<EditorExportPlatform> get_platform() const;
 
+    bool deploy_native_debug;
 	bool has(const StringName &p_property) const { return values.has(p_property); }
 
 	void update_files_to_export();

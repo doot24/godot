@@ -56,7 +56,11 @@ void EditorRunNative::_notification(int p_what) {
 					small_icon->create_from_image(im, 0);
 					MenuButton *mb = memnew(MenuButton);
 					mb->get_popup()->connect("id_pressed", this, "_run_native", varray(i));
-					mb->connect("pressed", this, "_run_native", varray(-1, i));
+
+                    mb->get_popup()->add_item("Deploy Release Version",0);
+                    mb->get_popup()->add_item("Deploy Debug Version",1);
+
+                    //dmb->connect("pressed", this, "_run_native", varray(-1, i));
 					mb->set_icon(small_icon);
 					add_child(mb);
 					menus[i] = mb;
@@ -80,7 +84,7 @@ void EditorRunNative::_notification(int p_what) {
 				if (dc == 0) {
 					mb->hide();
 				} else {
-					mb->get_popup()->clear();
+                    //ddmb->get_popup()->clear();
 					mb->show();
 					if (dc == 1) {
 						mb->set_tooltip(eep->get_option_tooltip(0));
@@ -100,6 +104,9 @@ void EditorRunNative::_notification(int p_what) {
 }
 
 void EditorRunNative::_run_native(int p_idx, int p_platform) {
+
+    bool deploy_debug = p_idx;
+    p_idx = -1;
 
 	if (!EditorNode::get_singleton()->ensure_main_scene(true)) {
 		resume_idx = p_idx;
@@ -147,6 +154,7 @@ void EditorRunNative::_run_native(int p_idx, int p_platform) {
 	if (debug_navigation)
 		flags |= EditorExportPlatform::DEBUG_FLAG_VIEW_NAVIGATION;
 
+    preset->deploy_native_debug = deploy_debug;
 	eep->run(preset, p_idx, flags);
 }
 
